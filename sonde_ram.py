@@ -1,4 +1,4 @@
 import psutil
 
 ram_globale = psutil.virtual_memory().percent
-print("{ram_globale}")
+print(f"{ram_globale}")
