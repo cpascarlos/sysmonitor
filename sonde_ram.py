@@ -1,6 +1,5 @@
-import psutil
-from datetime import datetime
+import psutil, subprocess
 
-now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 ram_globale = psutil.virtual_memory().percent
-print(f"[{now}] [RAM] Global: {ram_globale}%")
+cmd = ["rrdtool", "update", "monitor.rrd", f"N:U:{ram_globale}:U"]
+subprocess.run(cmd)
