@@ -1,5 +1,4 @@
-import psutil, subprocess
+import psutil
 
 ram_globale = psutil.virtual_memory().percent
-cmd = ["rrdtool", "update", "monitor.rrd", f"N:U:{ram_globale}:U"]
-subprocess.run(cmd)
+print("{ram_globale}")
