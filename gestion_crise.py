@@ -53,10 +53,9 @@ def get_data_from_json():
     for last_entry in reversed(row_data):
         if last_entry[1] is not None:
             return {
-                "cpu": round(last_entry[1], 2),
-                "ram": round(last_entry[2], 2),
-                "disk": round(last_entry[3], 2),
-                "date": data['meta']['end']
+                "cpu": round(last_entry[0], 2),
+                "ram": round(last_entry[1], 2),
+                "disk": round(last_entry[2], 2),
             }
     return None
 
@@ -97,4 +96,4 @@ if is_crisis:
     print(f"ALERTE CRISE ! CPU:{stats['cpu']} RAM:{stats['ram']} DISK:{stats['disk']}")
     send_mail(stats)
 else:
-    print("OK.")
+    print(f"OK. CPU:{stats['cpu']} RAM:{stats['ram']} DISK:{stats['disk']}")
