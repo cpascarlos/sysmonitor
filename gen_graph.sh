@@ -9,7 +9,7 @@ echo "         GENERATEUR DE GRAPHIQUES          "
 echo "-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"
 
 PS3="Entrez le numéro (1, 2 ou 3) : "
-select choix in "Processeur (CPU)" "Mémoire (RAM)" "Disque (Disk)"
+select choix in "Processeur (CPU)" "Mémoire (RAM)" "Disque"
 do
     if [ "$choix" = "Processeur (CPU)" ]; then
         sonde="cpu"
@@ -17,8 +17,8 @@ do
     elif [ "$choix" = "Mémoire (RAM)" ]; then
         sonde="ram"
         break
-    elif [ "$choix" = "Disque (Disk)" ]; then
-        sonde="disk"
+    elif [ "$choix" = "Disque" ]; then
+        sonde="disque"
         break
     else
         echo "Choix invalide, merci de taper 1, 2 ou 3."
