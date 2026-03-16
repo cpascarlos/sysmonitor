@@ -4,7 +4,8 @@ import subprocess
 
 config = "config"
 parc_config = os.path.join(config, "parc_config.json")
-data_dir = "data_parc"
+json_dir = "json_parc"
+rrd_dir = "rrd_parc"
 
 config_defaut = {
     "machines": [
@@ -12,13 +13,15 @@ config_defaut = {
             "nom": "carl1",
             "ip": "192.168.1.55",
             "user": "ben",
-            "remote_path": "/home/ben/sysmonitor/export.json"
+            "remote_path_json": "/home/ben/sysmonitor/export.json",
+            "remote_path_rrd": "/home/ben/sysmonitor/monitor.rrd"
         },
         {
             "nom": "carl2",
             "ip": "192.168.1.56",
             "user": "carlos",
-            "remote_path": "/home/carlos/sysmonitor/export.json"
+            "remote_path_json": "/home/carlos/sysmonitor/export.json",
+            "remote_path_rrd": "/home/carlos/sysmonitor/monitor.rrd"
         }
     ]
 }
@@ -36,8 +39,10 @@ def init_config():
     return True
 
 def collecter_donnees():
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    if not os.path.exists(json_dir):
+        os.makedirs(json_dir)
+    if not os.path.exists(rrd_dir):
+        os.makedirs(rrd_dir)
 
     with open(parc_config, 'r') as f:
         config = json.load(f)
@@ -45,14 +50,19 @@ def collecter_donnees():
     for i in config['machines']:
         print(f"Tentative sur {i['nom']} ({i['ip']})")
         
-        local_dest = os.path.join(data_dir, f"export_{i['nom']}.json")
-        
-        remote_source = f"{i['user']}@{i['ip']}:{i['remote_path']}"
-        commande = ["scp", "-o", "ConnectTimeout=5", remote_source, local_dest]
+        json_dest = os.path.join(json_dir, f"export_{i['nom']}.json")
+        remote_json = f"{i['user']}@{i['ip']}:{i['remote_path_json']}"
+        commande1 = ["scp", "-o", "ConnectTimeout=5", remote_json, json_dest]
+
+        rrd_dest = os.path.join(rrd_dir, f"monitor_{i['nom']}.rrd")
+        remote_rrd = f"{i['user']}@{i['ip']}:{i['remote_path_rrd']}"
+        commande2 = ["scp", "-o", "ConnectTimeout=5", remote_rrd, rrd_dest]
 
         try:
-            subprocess.run(commande, check=True)
-            print(f"OK -> {local_dest}")
+            subprocess.run(commande1, check=True)
+            print(f"OK -> {json_dest}")
+            subprocess.run(commande2, check=True)
+            print(f"OK -> {rrd_dest}")
         except subprocess.CalledProcessError:
             print(f"ERREUR : Impossible de connecter {i['nom']}.")
 
