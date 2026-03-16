@@ -4,98 +4,109 @@ import smtplib
 from email.message import EmailMessage
 
 config_dir = "config"
-config_file = os.path.join(config_dir, "crisis_config.json")
-template_file = os.path.join(config_dir, "template_mail.html")
-data_file = "export.json"
+dossier_donnees = "json_parc"
+fichier_config = os.path.join(config_dir, "config_crise.json")
+fichier_template = os.path.join(config_dir, "modele_mail.html")
 
-config_defaut = {
-    "cpu_threshold": 80.0,
-    "ram_threshold": 85.0,
-    "disk_threshold": 90.0,
-    "admin_email": "email",
-    "smtp_server": "smtp",
-    "smtp_port": 465,
-    "smtp_user": "email",
-    "smtp_pass": "mdp"
+config_par_defaut = {
+    "seuil_cpu": 80.0,
+    "seuil_ram": 85.0,
+    "seuil_disque": 90.0,
+    "email_admin": "email",
+    "serveur_smtp": "smtp",
+    "port_smtp": 465,
+    "utilisateur_smtp": "email",
+    "mdp_smtp": "mdp"
 }
 
-template_defaut = """
+modele_par_defaut = """
 <html>
 <body style="font-family: Arial, sans-serif;">
-    <h2 style="color: red;">SITUATION DE CRISE : seuil atteint</h2>
-    <p>La module de crise a détecté un dépassement :</p>
+    <h2 style="color: red;">SITUATION DE CRISE : {machine}</h2>
+    <p>Le module de crise a détecté un dépassement de seuil sur cette machine :</p>
     <ul>
         <li><strong>CPU :</strong> {cpu}%</li>
         <li><strong>RAM :</strong> {ram}%</li>
-        <li><strong>Disque :</strong> {disk}%</li>
+        <li><strong>Disque :</strong> {disque}%</li>
     </ul>
 </body>
 </html>
 """
 
-def init_files():
+def initialiser_fichiers():
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
-    if not os.path.exists(config_file):
-        with open(config_file, 'w', encoding='utf-8') as f:
-            json.dump(config_defaut, f, indent=4)
-    if not os.path.exists(template_file):
-        with open(template_file, 'w', encoding='utf-8') as f:
-            f.write(template_defaut)
+    if not os.path.exists(fichier_config):
+        with open(fichier_config, 'w', encoding='utf-8') as f:
+            json.dump(config_par_defaut, f, indent=4)
+    if not os.path.exists(fichier_template):
+        with open(fichier_template, 'w', encoding='utf-8') as f:
+            f.write(modele_par_defaut)
 
-def get_data_from_json():
-    if not os.path.exists(data_file):
+def extraire_donnees_json(chemin_fichier):
+    if not os.path.exists(chemin_fichier):
         return None
-    with open(data_file, 'r') as f:
-        data = json.load(f)
-    
-    row_data = data['data']
-    last_entry = row_data[-2]
+    try:
+        with open(chemin_fichier, 'r') as f:
+            donnees = json.load(f)
+        
+        entrees = donnees['data']
+        derniere_entree = entrees[-2] 
 
-    if last_entry[0] is not None:
-        return {
-            "cpu": round(last_entry[0], 2),
-            "ram": round(last_entry[1], 2),
-            "disk": round(last_entry[2], 2),
-        }
+        if derniere_entree[0] is not None:
+            return {
+                "cpu": round(derniere_entree[0], 2),
+                "ram": round(derniere_entree[1], 2),
+                "disque": round(derniere_entree[2], 2),
+            }
+    except Exception as e:
+        print(f"Erreur de lecture sur {chemin_fichier}: {e}")
     return None
 
-def send_mail(stats):
-    with open(config_file, 'r') as f:
+def envoyer_alerte(stats, nom_machine):
+    with open(fichier_config, 'r') as f:
         config = json.load(f)
-    with open(template_file, 'r') as f:
-        content = f.read().format(**stats)
+    with open(fichier_template, 'r') as f:
+        contenu = f.read().format(machine=nom_machine, **stats)
 
-    msg = EmailMessage()
-    msg.set_content(content, subtype='html')
-    msg['Subject'] = "[AUTOMATIQUE] Crise : Alerte Ressources Serveur"
-    msg['From'] = config["smtp_user"]
-    msg['To'] = config["admin_email"]
+    message = EmailMessage()
+    message.set_content(contenu, subtype='html')
+    message['Subject'] = f"[AUTOMATIQUE] Dépassement détecté sur {nom_machine}"
+    message['From'] = config["utilisateur_smtp"]
+    message['To'] = config["email_admin"]
 
     try:
-        # Pour le port 465, on utilise SMTP_SSL directement
-        with smtplib.SMTP_SSL(config["smtp_server"], config["smtp_port"]) as server:
-            server.login(config["smtp_user"], config["smtp_pass"])
-            server.send_message(msg)
-        print("Mail envoyé avec succès via le serveur de l'université.")
+        with smtplib.SMTP_SSL(config["serveur_smtp"], config["port_smtp"]) as serveur:
+            serveur.login(config["utilisateur_smtp"], config["mdp_smtp"])
+            serveur.send_message(message)
+        print(f"Mail d'alerte envoyé pour {nom_machine}.")
     except Exception as e:
-        print(f"Erreur d'envoi SMTP : {e}")
+        print(f"Erreur d'envoi SMTP pour {nom_machine} : {e}")
 
-init_files()
-stats = get_data_from_json()
+initialiser_fichiers()
 
-if stats:
-    with open(config_file, 'r') as f:
-        config = json.load(f)
+with open(fichier_config, 'r') as f:
+    config = json.load(f)
 
-    is_crisis = (stats["cpu"] >= config["cpu_threshold"] or 
-                 stats["ram"] >= config["ram_threshold"] or 
-                 stats["disk"] >= config["disk_threshold"])
+if os.path.exists(dossier_donnees):
+    for nom_fichier in os.listdir(dossier_donnees):
+        if nom_fichier.endswith(".json"):
+            chemin_complet = os.path.join(dossier_donnees, nom_fichier)
+            nom_machine = os.path.splitext(nom_fichier)[0]
+            
+            stats_actuelles = extraire_donnees_json(chemin_complet)
 
-    if is_crisis:
-        print(f"ALERTE CRISE ! CPU:{stats['cpu']} RAM:{stats['ram']} DISK:{stats['disk']}")
-        send_mail(stats)
-    else:
-        print(f"OK. CPU:{stats['cpu']} RAM:{stats['ram']} DISK:{stats['disk']}")
+            if stats_actuelles:
+                en_crise = (stats_actuelles["cpu"] >= config["seuil_cpu"] or 
+                            stats_actuelles["ram"] >= config["seuil_ram"] or 
+                            stats_actuelles["disque"] >= config["seuil_disque"])
+
+                if en_crise:
+                    print(f"CRISE {nom_machine} !!!")
+                    envoyer_alerte(stats_actuelles, nom_machine)
+                else:
+                    print(f"Machine {nom_machine} : État normal.")
+            else:
+                print(f"Données manquantes pour {nom_machine}.")
 else:
-    print("Erreur : Impossible de lire les données JSON.")
+    print(f"Le dossier {dossier_donnees} est introuvable.")
