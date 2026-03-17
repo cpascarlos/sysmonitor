@@ -44,4 +44,4 @@ def detail_machine(nom):
 
     return render_template('machine.html', nom=nom, stats=stats_actuelles)
 
-app.run(debug=True, port=6767)
+app.run(debug=True, port=6767, host='0.0.0.0')

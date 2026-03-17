@@ -93,6 +93,7 @@ if os.path.exists(dossier_donnees):
         if nom_fichier.endswith(".json"):
             chemin_complet = os.path.join(dossier_donnees, nom_fichier)
             nom_machine = os.path.splitext(nom_fichier)[0]
+            nom_machine = nom_machine.replace("export_", "")
             
             stats_actuelles = extraire_donnees_json(chemin_complet)
 

@@ -31,7 +31,7 @@ def send_alert_mail(alerte):
     </html>
     """
     msg.set_content(content, subtype='html')
-    msg['Subject'] = f"[VEILLE] {alerte['titre']}"
+    msg['Subject'] = f"[AUTOMATIQUE] {alerte['titre']}"
     msg['From'] = config["smtp_user"]
     msg['To'] = config["admin_email"]
 
@@ -40,7 +40,7 @@ def send_alert_mail(alerte):
             server.login(config["smtp_user"], config["smtp_pass"])
             server.send_message(msg)
     except Exception as e:
-        print(f"Erreur envoi mail veille : {e}")
+        print(f"{e}")
 
 try:
     response = requests.get(url, timeout=10)
@@ -79,4 +79,4 @@ if item is not None:
         
         send_alert_mail(nouvelle_alerte)
     else:
-        print("Aucun changement détecté depuis la dernière vérification.")
+        print("Aucun changement.")
